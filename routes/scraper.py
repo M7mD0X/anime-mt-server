@@ -8,12 +8,32 @@ router = APIRouter()
 HEADERS = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
     'Accept-Language': 'ar,en;q=0.9',
+    'Referer': 'https://witanime.life/',
 }
+
+@router.get("/debug")
+async def debug(q: str):
+    try:
+        async with httpx.AsyncClient(headers=HEADERS, timeout=15, follow_redirects=True) as client:
+            response = await client.get(f'https://witanime.life/?search_param=animes&s={q}')
+            soup = BeautifulSoup(response.text, 'lxml')
+            # نجيب كل الـ classes الموجودة
+            classes = set()
+            for tag in soup.find_all(class_=True):
+                for c in tag.get('class', []):
+                    classes.add(c)
+            return {
+                "status": response.status_code,
+                "url": str(response.url),
+                "classes": list(classes)[:50],
+            }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/search")
 async def search_witanime(q: str):
     try:
-        async with httpx.AsyncClient(headers=HEADERS, timeout=15) as client:
+        async with httpx.AsyncClient(headers=HEADERS, timeout=15, follow_redirects=True) as client:
             response = await client.get(f'https://witanime.life/?search_param=animes&s={q}')
             soup = BeautifulSoup(response.text, 'lxml')
             results = []
@@ -34,7 +54,7 @@ async def search_witanime(q: str):
 @router.get("/episodes")
 async def get_episodes_witanime(url: str):
     try:
-        async with httpx.AsyncClient(headers=HEADERS, timeout=15) as client:
+        async with httpx.AsyncClient(headers=HEADERS, timeout=15, follow_redirects=True) as client:
             response = await client.get(url)
             soup = BeautifulSoup(response.text, 'lxml')
             episodes = []
@@ -53,34 +73,24 @@ async def get_video_url(url: str):
         async with httpx.AsyncClient(headers=HEADERS, timeout=15, follow_redirects=True) as client:
             response = await client.get(url)
             soup = BeautifulSoup(response.text, 'lxml')
-
-            # Try to find direct video URL
             video_urls = []
-
-            # Check for video tag
             for video in soup.select('video source, video'):
                 src = video.get('src', '')
                 if src and '.mp4' in src:
                     video_urls.append({'quality': 'default', 'url': src})
-
-            # Check for iframe sources
             iframes = soup.select('iframe')
             for iframe in iframes:
                 src = iframe.get('src', '')
                 if src:
                     video_urls.append({'quality': 'iframe', 'url': src})
-
-            # Check scripts for video URLs
             scripts = soup.find_all('script')
             for script in scripts:
                 if script.string:
                     mp4_urls = re.findall(r'https?://[^\s"\']+\.mp4[^\s"\']*', script.string)
                     for u in mp4_urls:
                         video_urls.append({'quality': 'auto', 'url': u})
-
             if not video_urls:
                 raise HTTPException(status_code=404, detail="No video found")
-
             return {"results": video_urls}
     except HTTPException:
         raise
