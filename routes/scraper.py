@@ -14,7 +14,7 @@ HEADERS = {
 async def search_witanime(q: str):
     try:
         async with httpx.AsyncClient(headers=HEADERS, timeout=15) as client:
-            response = await client.get(f'https://witanime.cyou/?search_param=animes&s={q}')
+            response = await client.get(f'https://witanime.life/?search_param=animes&s={q}')
             soup = BeautifulSoup(response.text, 'lxml')
             results = []
             for item in soup.select('.anime-card-container')[:10]:
