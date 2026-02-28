@@ -17,7 +17,7 @@ def fix_id(doc):
     doc["id"] = str(doc["_id"])
     del doc["_id"]
     return doc
-
+    
 class AnimeModel(BaseModel):
     title: str
     title_arabic: Optional[str] = ""
@@ -32,6 +32,8 @@ class AnimeModel(BaseModel):
     year: Optional[int] = None
     score: Optional[float] = None
     views: Optional[int] = 0
+    aniwatch_id: Optional[str] = ""
+
 
 class EpisodeModel(BaseModel):
     anime_id: str
