@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from routes import anime, episodes, admin, scraper
 from database import connect_db
+from routes import proxy
 
 app = FastAPI(title="Anime MT API")
 
